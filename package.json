@@ -39,7 +39,6 @@
   "dependencies": {
     "react": "^0.14.0",
     "react-addons-shallow-compare": "^0.14.0",
-    "react-measure": "https://github.com/chen-ye/react-measure/tarball/1ed47dfc416183ad706ab5436b1e8f4498821ae8",
     "react-motion": "^0.3.1"
   },
   "devDependencies": {
