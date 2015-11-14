@@ -7,7 +7,7 @@
 		exports["Transition"] = factory(require("React"), require("ReactMotion"), require("Measure"));
 	else
 		root["Transition"] = factory(root["React"], root["ReactMotion"], root["Measure"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_2__, __WEBPACK_EXTERNAL_MODULE_3__, __WEBPACK_EXTERNAL_MODULE_13__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_2__, __WEBPACK_EXTERNAL_MODULE_3__, __WEBPACK_EXTERNAL_MODULE_12__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -115,7 +115,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _configToStyle2 = _interopRequireDefault(_configToStyle);
 
-	var _TransitionChild = __webpack_require__(9);
+	var _TransitionChild = __webpack_require__(8);
 
 	var _TransitionChild2 = _interopRequireDefault(_TransitionChild);
 
@@ -485,14 +485,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 7 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	'use strict';
 
 	Object.defineProperty(exports, '__esModule', {
 	  value: true
 	});
-	var TRANSFORM = __webpack_require__(8)('transform');
+	var TRANSFORM = 'transform';
 	var UNIT_TRANSFORMS = ['translateX', 'translateY', 'translateZ', 'transformPerspective'];
 	var DEGREE_TRANFORMS = ['rotate', 'rotateX', 'rotateY', 'rotateZ', 'skewX', 'skewY', 'scaleZ'];
 	var UNITLESS_TRANSFORMS = ['scale', 'scaleX', 'scaleY'];
@@ -528,36 +528,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 8 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, '__esModule', {
-	  value: true
-	});
-	exports['default'] = getVendorPrefix;
-
-	function getVendorPrefix(prop) {
-	  if (!document) return prop;
-
-	  var styles = document.createElement('p').style;
-	  var vendors = ['ms', 'O', 'Moz', 'Webkit'];
-
-	  if (styles[prop] === '') return prop;
-
-	  prop = prop.charAt(0).toUpperCase() + prop.slice(1);
-
-	  for (var i = vendors.length; i--;) {
-	    if (styles[vendors[i] + prop] === '') {
-	      return vendors[i] + prop;
-	    }
-	  }
-	}
-
-	module.exports = exports['default'];
-
-/***/ },
-/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -580,11 +550,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _reactAddonsShallowCompare = __webpack_require__(10);
+	var _reactAddonsShallowCompare = __webpack_require__(9);
 
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 
-	var _reactMeasure = __webpack_require__(13);
+	var _reactMeasure = __webpack_require__(12);
 
 	var _reactMeasure2 = _interopRequireDefault(_reactMeasure);
 
@@ -632,15 +602,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	module.exports = __webpack_require__(11);
+	module.exports = __webpack_require__(10);
 
 /***/ },
-/* 11 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -656,7 +626,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var shallowEqual = __webpack_require__(12);
+	var shallowEqual = __webpack_require__(11);
 
 	/**
 	 * Does a shallow comparison for props and state.
@@ -669,7 +639,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = shallowCompare;
 
 /***/ },
-/* 12 */
+/* 11 */
 /***/ function(module, exports) {
 
 	/**
@@ -724,10 +694,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = shallowEqual;
 
 /***/ },
-/* 13 */
+/* 12 */
 /***/ function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_13__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_12__;
 
 /***/ }
 /******/ ])
