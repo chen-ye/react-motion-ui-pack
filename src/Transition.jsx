@@ -1,24 +1,19 @@
-import React, { Component, PropTypes, Children, cloneElement, createElement } from 'react'
-import { TransitionMotion, spring, utils } from 'react-motion'
-import Measure from 'react-measure'
+import React, { Component, PropTypes, Children, createElement } from 'react'
+import { TransitionMotion, spring } from 'react-motion'
+import cloneStyles from './clone-styles'
 import toRMStyles from './to-RM-styles'
 import fromRMStyles from './from-RM-styles'
 import configToStyle from './config-to-style'
-
-// TODOS:
-// - add prop for default styles
-// - make prop appear true/false to show animation on mount
-//   would pass an empty config to tell RM not to drill into it
+import TransitionChild from './TransitionChild'
 
 class Transition extends Component {
   static propTypes = {
-    component: PropTypes.string,
-    onlyChild: PropTypes.bool,
-    measure: PropTypes.bool,
-    appear: PropTypes.oneOfType([
-      PropTypes.bool,
-      PropTypes.object
+    component: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.bool
     ]),
+    runOnMount: PropTypes.bool,
+    appear: PropTypes.object,
     enter: PropTypes.object,
     leave: PropTypes.object,
     onEnter: PropTypes.func,
@@ -26,16 +21,10 @@ class Transition extends Component {
   }
 
   static defaultProps = {
-    component: 'div', // define the wrapping tag around the elements you want to transition in/out
-    onlyChild: false, // useful if you only want to transition in/out 1 element rather than a list
-    measure: false, // pass true to use measure and get child dimensions to use with your animations
-    appear: true, // accepts an object or boolean, if boolean passed it will use "leave" as the origin point of the transition
-    enter: {
-      opacity: 1
-    },
-    leave: {
-      opacity: 0
-    },
+    component: 'div',
+    runOnMount: true,
+    enter: { opacity: 1 },
+    leave: { opacity: 0 },
     onEnter: () => null,
     onLeave: () => null
   }
@@ -43,36 +32,27 @@ class Transition extends Component {
   state = {
     dimensions: {}
   }
-
-  // convert auto values to a start of 0
-  _convertAutoValues(style) {
-    let newStyles = {...style}
-
-    if(style.height === 'auto') {
-      newStyles.height = 0
-    }
-    if(style.width === 'auto') {
-      newStyles.width = 0
-    }
-
-    return newStyles
-  }
+  _onlyKey = Date.now()
+  _instant = {}
 
   _getDefaultStyles = () => {
-    const { children, appear, enter, leave } = this.props
+    const { children, runOnMount, appear, enter, leave } = this.props
     let childStyles = enter
     let configs = {}
 
-    if(appear) {
-      childStyles = (typeof appear === 'object') ? appear : leave
+    if (runOnMount) {
+      childStyles = appear || leave
     }
 
     // convert auto values and map to new object to avoid mutation
-    childStyles = this._convertAutoValues(childStyles)
+    childStyles = cloneStyles(childStyles)
 
     Children.forEach(children, child => {
-      if(!child) return
-      configs[child.key] = {
+      if (!child) return
+
+      const key = child.key || this._onlyKey
+
+      configs[key] = {
         child,
         ...childStyles
       }
@@ -86,22 +66,38 @@ class Transition extends Component {
     const { children, enter } = this.props
     const configs = {}
 
-    // convert to React Motion friendly structure
-    let childStyles = toRMStyles(enter)
-
     Children.forEach(children, child => {
-      if(!child) return
+      if (!child) return
 
-      const childDimensions = dimensions && dimensions[child.key]
+      const key = child.key || this._onlyKey
+      const childDimensions = dimensions && dimensions[key]
 
-      if(childStyles.height && childStyles.height.val === 'auto') {
-        childStyles.height.val = childDimensions && childDimensions.height || 0
+      // convert to React Motion friendly structure
+      let childStyles = toRMStyles(enter)
+
+      if (enter.width &&
+          (enter.width === 'auto' || enter.width.val === 'auto')) {
+        childStyles.width.val = childDimensions ? childDimensions.width : 0
       }
-      if(childStyles.width && childStyles.width.val === 'auto') {
-        childStyles.width.val = childDimensions && childDimensions.width || 0
+
+      if (enter.height &&
+          (enter.height === 'auto' || enter.height.val === 'auto')) {
+        let height = childDimensions ? childDimensions.height : 0
+
+        // if instant, apply the height directly rather than through RM
+        if (this._instant[key]) {
+          childStyles.height = height
+
+          // it only needs to be instant for one render
+          // to prime RM for the next height transition
+          // so we set it back to false
+          this._instant[key] = false
+        } else {
+          childStyles.height.val = height
+        }
       }
 
-      configs[child.key] = {
+      configs[key] = {
         child,
         ...childStyles
       }
@@ -116,7 +112,7 @@ class Transition extends Component {
     let childStyles = (typeof appear === 'object') ? appear : leave
 
     // convert auto values and map to new object to avoid mutation
-    childStyles = this._convertAutoValues(childStyles)
+    childStyles = cloneStyles(childStyles)
 
     // fire entering callback
     onEnter(flatValues)
@@ -131,9 +127,12 @@ class Transition extends Component {
     const { leave, onLeave } = this.props
     const flatValues = fromRMStyles(currentStyles[key])
 
+    // TODO: when RM implements onEnd callback do cleanup
     // clean up dimensions when item leaves
-    delete this.state.dimensions[key]
-
+    // if (this.state.dimensions[key]) {
+    //   delete this.state.dimensions[key]
+    // }
+    
     // fire leaving callback
     onLeave(flatValues)
 
@@ -143,53 +142,66 @@ class Transition extends Component {
     }
   }
 
-  _storeDimensions = (key, childDimensions) => {
+  _storeDimensions = (key, childDimensions, mutations) => {
     const { dimensions } = this.state
+
+    // if any mutations, set instantly
+    if (mutations) {
+      this._instant[key] = true
+    }
+    
+    // store child dimensions
     dimensions[key] = childDimensions
+    
+    // update state with new dimensions
     this.setState({dimensions})
-  }
-
-  _shouldMeasure() {
-    const { measure, enter } = this.props
-
-    return measure || 
-           (enter.width === 'auto') ||
-           (enter.height === 'auto')
   }
 
   _childrenToRender = (currValues) => {
     return Object.keys(currValues).map(key => {
-      const currValue = currValues[key]
-      const { child, ...configs } = currValue
-      const childStyles = child.props.style
+      const {child, ...configs} = currValues[key] 
+      const dimensions = this.state.dimensions[key]
+      const childStyle = child.props.style
       let style = configToStyle(configs)
-      let component = null
+      let currHeight = style.height
+      
+      // if height is being animated we'll want to ditch it
+      // after it's reached its destination
+      if (dimensions && currHeight) {
+        let destHeight = parseFloat(dimensions.height).toFixed(4)
+
+        if (destHeight > 0 && destHeight !== currHeight) {
+          style = {
+            ...style,
+            height: currHeight,
+            overflow: 'hidden'
+          }
+        } else {
+          style = {
+            ...style,
+            height: ''
+          }
+        }
+      }
 
       // merge in styles if they we're set by the user
       // Transition styles will take precedence
-      if(childStyles) {
-        style = {...childStyles, ...style}
+      if (childStyle) {
+        style = {...childStyle, ...style}
       }
 
-      // determine whether we need to measure the child or not
-      if(this._shouldMeasure()) {
-        const onChange = this._storeDimensions.bind(null, key)
-
-        component = React.createElement(
-          Measure,
-          {key, clone: true, whitelist: ['width', 'height'], onChange},
-          cloneElement(child, {style, dimensions: this.state.dimensions[key]})
-        )
-      } else {
-        component = cloneElement(child, {key, style})
-      }
-
-      return component
-    });
+      return React.createElement(TransitionChild, {
+        key,
+        child,
+        style,
+        dimensions,
+        onMeasure: this._storeDimensions.bind(null, key)
+      })
+    })
   }
 
   render() {
-    const { component, onlyChild, appear } = this.props
+    const { component, appear } = this.props
 
     return(
       <TransitionMotion
@@ -202,11 +214,11 @@ class Transition extends Component {
           const children = this._childrenToRender(currValues)
           let wrapper = null
 
-          if(onlyChild) {
-            if(children.length === 1) {
+          if (!component || component === 'false') {
+            if (children.length === 1) {
               wrapper = Children.only(children[0])
             } else {
-              wrapper = createElement(component, {style: {display: 'none'}})
+              wrapper = createElement('span', {style: {display: 'none'}})
             }
           } else {
             wrapper = createElement(component, this.props, children)
@@ -215,7 +227,7 @@ class Transition extends Component {
           return wrapper
         }}
       </TransitionMotion>
-    );
+    )
   }
 }
 

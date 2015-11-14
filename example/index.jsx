@@ -1,19 +1,26 @@
-import React, { Component, PropTypes } from 'react';
-import { spring } from 'react-motion';
-import Transition from '../src/react-motion-ui-pack';
-import Measure from 'react-measure';
+import React, { Component, PropTypes } from 'react'
+import ReactDOM from 'react-dom'
+import shallowCompare from 'react/lib/shallowCompare'
+import { spring } from 'react-motion'
+import Transition from '../src/react-motion-ui-pack'
 
 import './main.scss';
 
 class Todo extends Component {
-  _handleDelete(index) {
-    this.props.onDelete(index);
+  state = {
+    expand: false
+  }
+
+  _handleDelete(index, e) {
+    e.stopPropagation()
+    this.props.onDelete(index)
   }
 
   render() {
-    const { item, index, style } = this.props;
+    const { item, index, style } = this.props
+    const { expand } = this.state
 
-    return(
+    return (
       <div className="todo" style={style}>
         <div className="todo__inner">
           {item}
@@ -23,9 +30,19 @@ class Todo extends Component {
           >
             ×
           </div>
+          <div
+            className="todo__expand"
+            onClick={() => {this.setState({expand: !expand})}}
+          >
+            {expand ? '-' : '+'}
+          </div>
+          {
+            expand &&
+            <div style={{height: 100}} />
+          }
         </div>
       </div>
-    );
+    )
   }
 }
 
@@ -51,7 +68,7 @@ class ToDos extends Component {
       return <Todo key={item} item={item} index={index} onDelete={this.removeItem} />
     });
 
-    return(
+    return (
       <div className="todo-app">
         <div className="buttons">
           <button onClick={this.addItem.bind(this)}>Add Item</button>
@@ -59,8 +76,9 @@ class ToDos extends Component {
         <Transition
           component="div"
           className="todos"
+          measure={true}
           enter={{
-            height: 'auto',
+            height: spring('auto', [100, 15]),
             scale: 1,
             translateY: 0,
             opacity: 1
@@ -79,6 +97,49 @@ class ToDos extends Component {
   }
 }
 
+class Menu extends Component {
+  state = {
+    isOpen: false,
+    extraContent: false
+  }
+
+  render() {
+    const { isOpen, extraContent } = this.state
+
+    return (
+      <div className="menu-container">
+        <button
+          className="menu-button"
+          onClick={() => this.setState({isOpen: !isOpen})}
+        >
+          {isOpen ? 'Close' : 'Open'}
+        </button>
+        <Transition
+          component={false}
+          enter={{height: 'auto'}}
+          leave={{height: 0}}
+        >
+          {
+            isOpen &&
+            <div className="menu">
+              <div style={{padding: 12}}>
+                There should be some content here
+              </div>
+              <button onClick={() => this.setState({extraContent: !extraContent})}>
+                Toggle Extra Content
+              </button>
+              {
+                extraContent &&
+                <div>Extra Menu Contnt</div>
+              }
+            </div>
+          }
+        </Transition>
+      </div>
+    )
+  }
+}
+
 class Modal extends Component {
   state = {
     modalOpen: false
@@ -91,14 +152,14 @@ class Modal extends Component {
   render() {
     const modalClasses = this.state.modalOpen ? 'modal modal--open' : 'modal';
 
-    return(
+    return (
       <div>
         <button className="modal-trigger" onClick={this._toggleModal}>
           <i>+</i>
         </button>
         <aside className={modalClasses}>
           <Transition 
-            onlyChild={true}
+            component={false}
             enter={{
               opacity: 1,
               scale: 1,
@@ -112,7 +173,7 @@ class Modal extends Component {
           >
             {
               this.state.modalOpen &&
-              <div key="modal" className="modal__content" style={{background: '#F1F2F3'}}>
+              <div className="modal__content" style={{background: '#F1F2F3'}}>
                 Hey I'm a modal!
                 <a onClick={this._toggleModal} className="modal__close"></a>
               </div>
@@ -128,11 +189,12 @@ class App extends Component {
   render() {
     return(
       <div>
-        <ToDos />
-        <Modal />
+        <ToDos/>
+        <Menu/>
+        <Modal/>
       </div>
-    );
+    )
   }
 }
 
-React.render(<App />, document.body);
+ReactDOM.render(<App />, document.getElementById('app'))
